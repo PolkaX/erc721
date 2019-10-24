@@ -8,8 +8,6 @@ use ink_core::{
 };
 use ink_lang::contract;
 
-pub type TokenId = Hash;
-
 contract! {
     #![env = ink_core::env::DefaultSrmlTypes]
 
@@ -17,14 +15,14 @@ contract! {
     event Transfer {
         from: Option<AccountId>,
         to: AccountId,
-        id: TokenId,
+        id: Hash,
     }
 
     /// Event emited when a token approve occurs
     event Approval {
         from: AccountId,
         to: AccountId,
-        id: TokenId,
+        id: Hash,
     }
 
     /// Event emitted when an operator is enabled or disabled for an owner.
@@ -37,9 +35,9 @@ contract! {
 
     struct Erc721 {
         /// Mapping from token to owner.
-        token_owner: storage::HashMap<TokenId, AccountId>,
+        token_owner: storage::HashMap<Hash, AccountId>,
         /// Mapping from token to approvals users.
-        token_approvals: storage::HashMap<TokenId, AccountId>,
+        token_approvals: storage::HashMap<Hash, AccountId>,
         /// Mapping from owner to number of owned token.
         owned_tokens_count: storage::HashMap<AccountId, u128>,
         /// Mapping from owner to operator approvals
@@ -57,7 +55,7 @@ contract! {
         /// ==========================
         /// MINT TOKEN, JUST FOR TEST
         /// ==========================
-        pub(external) fn mint(&mut self, id: TokenId) -> bool {
+        pub(external) fn mint(&mut self, id: Hash) -> bool {
             let caller = env.caller();
             let owner = self.owner_of_or_none(&id);
             if owner != *self.default_account {
@@ -83,14 +81,14 @@ contract! {
         }
 
         /// Get owner for specific token.
-        pub(external) fn owner_of(&self, id: TokenId) -> AccountId {
+        pub(external) fn owner_of(&self, id: Hash) -> AccountId {
             let owner = self.owner_of_or_none(&id);
             env.println(&format!("Erc721::owner_of(token = {:?}) = {:?}", id, owner));
             owner
         }
 
         /// The approved address for this token, or the none address if there is none
-        pub(external) fn get_approved(&self, id: TokenId) -> AccountId {
+        pub(external) fn get_approved(&self, id: Hash) -> AccountId {
             let account = self.approved_of_or_none(&id);
             account
         }
@@ -124,7 +122,7 @@ contract! {
             self.is_approved_for_all_impl(owner, operator)
         }
 
-        pub(external) fn transfer_from(&mut self, from: AccountId, to: AccountId, id: TokenId) -> bool {
+        pub(external) fn transfer_from(&mut self, from: AccountId, to: AccountId, id: Hash) -> bool {
             let owner = self.owner_of_or_none(&id);
             env.println(&format!("Erc721::transfer_from::(owner={:?}, from={:?}, to={:?}", owner, from , to));
             if owner == *self.default_account {
@@ -146,7 +144,7 @@ contract! {
         }
 
         /// Approve another account to operate the given token
-        pub(external) fn approve(&mut self, to: AccountId, id: TokenId) -> bool {
+        pub(external) fn approve(&mut self, to: AccountId, id: Hash) -> bool {
             let caller = env.caller();
             let owner = self.owner_of_or_none(&id);
             if caller != owner {
@@ -173,17 +171,17 @@ contract! {
             *self.owned_tokens_count.get(of).unwrap_or(&0)
         }
 
-        fn owner_of_or_none(&self, id: &TokenId) -> AccountId {
+        fn owner_of_or_none(&self, id: &Hash) -> AccountId {
             let owner = self.token_owner.get(id).unwrap_or(&self.default_account);
             *owner
         }
 
-        fn approved_of_or_none(&self, id: &TokenId) -> AccountId {
+        fn approved_of_or_none(&self, id: &Hash) -> AccountId {
             let owner = self.token_approvals.get(id).unwrap_or(&self.default_account);
             *owner
         }
 
-        fn is_approved_or_owner(&self, spender: AccountId, id: TokenId) -> bool {
+        fn is_approved_or_owner(&self, spender: AccountId, id: Hash) -> bool {
             let owner = self.owner_of_or_none(&id);
             if owner == spender {
                 // env.println(&format!("Erc721::is_approved_or_owner::spender is owner"));
@@ -208,7 +206,7 @@ contract! {
             }
         }
 
-        fn transfer_from_impl(&mut self, from: &AccountId, to: &AccountId, id: &TokenId) -> bool {
+        fn transfer_from_impl(&mut self, from: &AccountId, to: &AccountId, id: &Hash) -> bool {
 
             self.clear_approval(id);
 
@@ -222,7 +220,7 @@ contract! {
             true
         }
 
-        fn clear_approval(&mut self, id: &TokenId) {
+        fn clear_approval(&mut self, id: &Hash) {
             if *self.default_account != self.approved_of_or_none(&id) {
                 self.token_approvals.insert(*id, *self.default_account);
             }
